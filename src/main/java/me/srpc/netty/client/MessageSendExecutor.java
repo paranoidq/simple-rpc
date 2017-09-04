@@ -35,6 +35,15 @@ public class MessageSendExecutor {
     }
 
 
+    /**
+     * 本质上其实就是通过反射创建出需要调用的服务的对象实例
+     * 然后进行调用
+     * 但是调用的过程显然不是直接调用服务对象，因为这只是个接口。
+     * 因此发射的实现中需要进行真正的RPC远程调用
+     * @param rpcInterface
+     * @param <T>
+     * @return
+     */
     public <T> T execute(Class<T> rpcInterface) {
         return (T) Reflection.newProxy(rpcInterface, new MessageSendProxy<T>());
     }

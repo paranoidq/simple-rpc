@@ -6,7 +6,11 @@
 
     <groupId>me.sample</groupId>
     <artifactId>simle-rpc</artifactId>
+    <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
+    <modules>
+        <module>rpc-v1</module>
+    </modules>
 
     <dependencies>
         <dependency>
@@ -31,6 +35,11 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>3.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jodd</groupId>
+            <artifactId>jodd-all</artifactId>
+            <version>3.9</version>
         </dependency>
 
         <dependency>
