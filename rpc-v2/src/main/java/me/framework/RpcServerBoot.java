@@ -1,4 +1,4 @@
-package me.rpc;
+package me.framework;
 
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 

@@ -10,6 +10,7 @@
     <version>1.0-SNAPSHOT</version>
     <modules>
         <module>rpc-v1</module>
+        <module>rpc-v2</module>
     </modules>
 
     <dependencies>
