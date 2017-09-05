@@ -11,7 +11,7 @@ import me.framework.rpc.model.MessageRequest;
 import me.framework.rpc.model.MessageResponse;
 import me.framework.rpc.model.ServiceHolder;
 import me.framework.rpc.serialize.support.RpcSerializeProtocol;
-import me.framework.rpc.util.boot.NettyServerBootstrapBuilder;
+import me.framework.rpc.util.nettybuilder.NettyServerBootstrapBuilder;
 import me.framework.rpc.util.pool.NamedThreadFactory;
 import me.framework.rpc.util.pool.RpcThreadPool;
 import org.slf4j.Logger;
@@ -106,7 +106,7 @@ public class MessageRecvExecutor implements ApplicationContextAware, Initializin
             if (ipAddr.length == 2) {
                 String host = ipAddr[0];
                 int port = Integer.parseInt(ipAddr[1]);
-                ChannelFuture future = bootstrap.bind(host, port).sync();
+                ChannelFuture future = bootstrap.bind(host, port);
                 System.out.printf("Netty RPC Server started success ip:%s port:%d\n", host, port);
                 future.channel().closeFuture().sync();
             } else {
@@ -123,7 +123,7 @@ public class MessageRecvExecutor implements ApplicationContextAware, Initializin
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         try {
             ServiceHolder holder = (ServiceHolder) applicationContext.getBean(Class.forName(
-                "me.rpc.model.ServiceHolder"
+                "me.framework.rpc.model.ServiceHolder"
             ));
             Map<String, Object> services = holder.getServices();
             for (Map.Entry<String, Object> service : services.entrySet()) {

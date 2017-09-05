@@ -1,4 +1,4 @@
-package me.framework.rpc.core.server;
+package me.framework.rpc.core.client;
 
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
@@ -17,31 +17,25 @@ import me.framework.rpc.serialize.support.kryo.KryoPoolFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-
 /**
  * @author paranoidq
  * @since 1.0.0
  */
-public class RpcRecvSerializeBinder implements MessageSerializeBinder {
-    private static final Logger logger = LoggerFactory.getLogger(RpcRecvSerializeBinder.class);
+public class RpcSendSerializeBinder implements MessageSerializeBinder {
+    private static final Logger logger = LoggerFactory.getLogger(RpcSendSerializeBinder.class);
 
-    private Map<String, Object> handlerMap;
-
-    public RpcRecvSerializeBinder(Map<String, Object> handlerMap) {
-        this.handlerMap = handlerMap;
-    }
+    public RpcSendSerializeBinder() {}
 
     @Override
     public void bind(RpcSerializeProtocol protocol, ChannelPipeline pipeline) {
         switch (protocol) {
             case JDK_SERIALIZE: {
-                logger.info("Use KRYO_SERIAZLIZE");
+                logger.info("Use JDK_SERIALIZE");
                 pipeline.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, MessageCodec.MESSAGE_LENGTH_BYTES, 0, MessageCodec.MESSAGE_LENGTH_BYTES));
                 pipeline.addLast(new LengthFieldPrepender(MessageCodec.MESSAGE_LENGTH_BYTES));
                 pipeline.addLast(new ObjectEncoder());
                 pipeline.addLast(new ObjectDecoder(Integer.MAX_VALUE, ClassResolvers.weakCachingConcurrentResolver(this.getClass().getClassLoader())));
-                pipeline.addLast(new MessageRecvHandler(handlerMap));
+                pipeline.addLast(new MessageSendHandler());
                 break;
             }
             case KRYO_SERIAZLIZE: {
@@ -50,7 +44,7 @@ public class RpcRecvSerializeBinder implements MessageSerializeBinder {
                 pipeline.addLast(new LoggingHandler());
                 pipeline.addLast(new KryoEncoder(util));
                 pipeline.addLast(new KryoDecoder(util));
-                pipeline.addLast(new MessageRecvHandler(handlerMap));
+                pipeline.addLast(new MessageSendHandler());
                 break;
             }
             case HESSIAN_SERIALIZE: {

@@ -19,7 +19,11 @@ import java.io.OutputStream;
  */
 public class KryoSerializer implements RpcSerializer {
 
-    private KryoPool pool = KryoPoolFactory.getKryoPoolInstance();
+    private KryoPool pool;
+
+    public KryoSerializer() {
+        pool = KryoPoolFactory.getKryoPoolInstance();
+    }
 
     @Override
     public void serialize(OutputStream outputStream, Object object) throws IOException {

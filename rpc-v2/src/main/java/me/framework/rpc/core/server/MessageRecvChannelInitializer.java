@@ -29,7 +29,6 @@ public class MessageRecvChannelInitializer extends ChannelInitializer<SocketChan
 
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
-        ChannelPipeline pipeline = ch.pipeline();
-        binder.bind(protocol, pipeline);
+        binder.bind(protocol, ch.pipeline());
     }
 }

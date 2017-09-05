@@ -1,4 +1,4 @@
-package me.framework.rpc.util.boot;
+package me.framework.rpc.util.nettybuilder;
 
 
 import io.netty.bootstrap.Bootstrap;

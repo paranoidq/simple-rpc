@@ -53,7 +53,7 @@ public class MessageDecoder extends ByteToMessageDecoder {
                 Object object = codec.decode(messageBody);
                 out.add(object);
             } catch (IOException e) {
-                logger.error("消息解码失败", e);
+                logger.error("Message decode failed", e);
             }
         }
 

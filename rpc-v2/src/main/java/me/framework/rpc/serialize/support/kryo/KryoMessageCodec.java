@@ -14,11 +14,7 @@ import java.io.IOException;
  */
 public class KryoMessageCodec implements MessageCodec {
 
-    private KryoPool pool;
-
-    public KryoMessageCodec(KryoPool pool) {
-        this.pool = pool;
-    }
+    public KryoMessageCodec() {}
 
     @Override
     public void encode(ByteBuf writeBuffer, Object message) throws IOException {

@@ -21,6 +21,6 @@
     <bean id="calc" class="me.framework.rpc.services.impl.CalculateImpl"/>
     <bean id="rpcServer" class="me.framework.rpc.core.server.MessageRecvExecutor">
         <constructor-arg name="serverAddress" value="${rpc.server.addr}"/>
-        <constructor-arg name="protocol" value="JDK_SERIALIZE"/>
+        <constructor-arg name="protocol" value="KRYO_SERIAZLIZE"/>
     </bean>
 </beans>
