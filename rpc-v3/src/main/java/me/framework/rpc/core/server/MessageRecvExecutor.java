@@ -7,6 +7,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import me.framework.rpc.config.RpcSystemConfig;
 import me.framework.rpc.model.MessageRequest;
 import me.framework.rpc.model.MessageResponse;
 import me.framework.rpc.model.ServiceHolder;
@@ -17,7 +18,6 @@ import me.framework.rpc.util.pool.RpcThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
@@ -32,24 +32,56 @@ import java.util.concurrent.ThreadPoolExecutor;
  * @author paranoidq
  * @since 1.0.0
  */
-public class MessageRecvExecutor implements ApplicationContextAware, InitializingBean {
+public class MessageRecvExecutor implements ApplicationContextAware {
     private static final Logger logger = LoggerFactory.getLogger(MessageRecvExecutor.class);
-
     private final static String DELIMITER = ":";
 
-    private static Map<String, Object> handlerMap = new ConcurrentHashMap<>();
-    private static volatile ListeningExecutorService threadPoolExecutor;
+    /**
+     * 存储RPC服务映射关系
+     * <ClassName --> Object Instance>
+     */
+    private Map<String, Object> handlerMap = new ConcurrentHashMap<>();
 
+    /**
+     * 通过spring注入方式设置具体值
+     */
     private String serverAddress;
-    // 默认JDK序列化方式
-    private RpcSerializeProtocol protocol = RpcSerializeProtocol.JDK_SERIALIZE;
+    /**
+     * 通过spring注入方式设置具体值
+     */
+    private RpcSerializeProtocol serializeProtocol = RpcSerializeProtocol.JDK_SERIALIZE;
+
+    /**
+     * 并发执行executor
+     */
+    private volatile ListeningExecutorService threadPoolExecutor;
+
+    /**
+     * 线程池线程数
+     */
+    private static int threadNums = RpcSystemConfig.SYSTEM_PROPERTY_THREADPOOL_THREAD_NUMS;
+
+    /**
+     * 线程池队列长度
+     */
+    private static int queueNums = RpcSystemConfig.SYSTEM_PROPERTY_THREADPOOL_QUEUE_NUMS;
+
+    private ThreadFactory threadFactory = new NamedThreadFactory("Netty RPC Factory");
+    private int parallel = Runtime.getRuntime().availableProcessors() * 2;
+    private EventLoopGroup boss = new NioEventLoopGroup();
+    private EventLoopGroup worker = new NioEventLoopGroup(parallel,threadFactory, SelectorProvider.provider());
 
 
-    public MessageRecvExecutor(String serverAddress, String protocol) {
-        this.serverAddress = serverAddress;
-        this.protocol = Enum.valueOf(RpcSerializeProtocol.class, protocol);
+    public MessageRecvExecutor() {
+        handlerMap.clear();
     }
 
+    private static class Holder {
+        private static final MessageRecvExecutor instance = new MessageRecvExecutor();
+    }
+    public static MessageRecvExecutor getInstance() {
+        return Holder.instance;
+    }
 
     /**
      * 提交请求去进行业务处理
@@ -58,7 +90,7 @@ public class MessageRecvExecutor implements ApplicationContextAware, Initializin
      * @param request
      * @param response
      */
-    public static void submit(Callable<Boolean> task, ChannelHandlerContext ctx, MessageRequest request, MessageResponse response) {
+    public void submit(Callable<Boolean> task, ChannelHandlerContext ctx, MessageRequest request, MessageResponse response) {
         if (threadPoolExecutor == null) {
             synchronized (MessageRecvExecutor.class) {
                 if (threadPoolExecutor == null) {
@@ -79,45 +111,12 @@ public class MessageRecvExecutor implements ApplicationContextAware, Initializin
                     }
                 });
             }
-
             @Override
             public void onFailure(Throwable t) {
                 logger.error("", t);
             }
         }, threadPoolExecutor);
     }
-
-    
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        ThreadFactory threadFactory = new NamedThreadFactory("Netty RPC Factory");
-        int parallel = Runtime.getRuntime().availableProcessors() * 2;
-        EventLoopGroup boss = new NioEventLoopGroup();
-        EventLoopGroup worker = new NioEventLoopGroup(parallel,threadFactory, SelectorProvider.provider());
-
-        try {
-            ServerBootstrap bootstrap = NettyServerBootstrapBuilder.getInstance(boss, worker)
-                .setAcceptSocketsMax(128)
-                .build();
-            bootstrap.childHandler(new MessageRecvChannelInitializer(handlerMap)
-                .setSerializeProtocol(protocol));
-
-            String[] ipAddr = serverAddress.split(MessageRecvExecutor.DELIMITER);
-            if (ipAddr.length == 2) {
-                String host = ipAddr[0];
-                int port = Integer.parseInt(ipAddr[1]);
-                ChannelFuture future = bootstrap.bind(host, port);
-                System.out.printf("Netty RPC Server started success ip:%s port:%d\n", host, port);
-                future.channel().closeFuture().sync();
-            } else {
-                System.out.printf("Netty RPC Server started fail!\n");
-            }
-        } finally {
-            worker.shutdownGracefully();
-            boss.shutdownGracefully();
-        }
-    }
-
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
@@ -130,7 +129,73 @@ public class MessageRecvExecutor implements ApplicationContextAware, Initializin
                 handlerMap.put(service.getKey(), service.getValue());
             }
         } catch (ClassNotFoundException e) {
-            logger.error("", e);
+            logger.error("未找到ServiceHolder类", e);
         }
+    }
+
+    public void start() {
+        try {
+            ServerBootstrap bootstrap = NettyServerBootstrapBuilder.getInstance(boss, worker)
+                .setAcceptSocketsMax(128)
+                .build();
+            bootstrap.childHandler(new MessageRecvChannelInitializer(handlerMap)
+                .setSerializeProtocol(serializeProtocol));
+
+            String[] ipAddr = serverAddress.split(MessageRecvExecutor.DELIMITER);
+            if (ipAddr.length == 2) {
+                String host = ipAddr[0];
+                int port = Integer.parseInt(ipAddr[1]);
+                ChannelFuture future = bootstrap.bind(host, port).sync();
+
+                future.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        if (future.isSuccess()) {
+                            System.out.printf("Netty RPC Server started success ip:%s port:%d\n", host, port);
+                            future.channel().closeFuture().sync().addListener(new ChannelFutureListener() {
+                                @Override
+                                public void operationComplete(ChannelFuture future) throws Exception {
+                                    threadPoolExecutor.shutdown();
+                                }
+                            });
+                        }
+                    }
+                });
+            } else {
+                logger.error("Netty RPC Server started fail!\n");
+            }
+        } catch (InterruptedException e) {
+            logger.error("Netty RPC Server started fail!\n");
+        }
+    }
+
+
+    public void stop() {
+        worker.shutdownGracefully();
+        boss.shutdownGracefully();
+    }
+
+    public Map<String, Object> getHandlerMap() {
+        return handlerMap;
+    }
+
+    public void setHandlerMap(Map<String, Object> handlerMap) {
+        this.handlerMap = handlerMap;
+    }
+
+    public String getServerAddress() {
+        return serverAddress;
+    }
+
+    public void setServerAddress(String serverAddress) {
+        this.serverAddress = serverAddress;
+    }
+
+    public RpcSerializeProtocol getSerializeProtocol() {
+        return serializeProtocol;
+    }
+
+    public void setSerializeProtocol(RpcSerializeProtocol serializeProtocol) {
+        this.serializeProtocol = serializeProtocol;
     }
 }

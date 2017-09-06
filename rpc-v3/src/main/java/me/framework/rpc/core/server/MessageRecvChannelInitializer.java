@@ -1,9 +1,8 @@
 package me.framework.rpc.core.server;
 
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
-import me.framework.rpc.message.MessageSerializeBinder;
+import me.framework.rpc.message.RpcSerializeFrame;
 import me.framework.rpc.serialize.support.RpcSerializeProtocol;
 
 import java.util.Map;
@@ -15,7 +14,7 @@ import java.util.Map;
 public class MessageRecvChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     private RpcSerializeProtocol protocol;
-    private MessageSerializeBinder binder;
+    private RpcSerializeFrame frame;
 
 
     public MessageRecvChannelInitializer setSerializeProtocol(RpcSerializeProtocol protocol) {
@@ -24,11 +23,11 @@ public class MessageRecvChannelInitializer extends ChannelInitializer<SocketChan
     }
 
     public MessageRecvChannelInitializer(Map<String, Object> handlerMap) {
-        binder = new RpcRecvSerializeBinder(handlerMap);
+        frame = new RpcRecvSerializeFrame(handlerMap);
     }
 
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
-        binder.bind(protocol, ch.pipeline());
+        frame.select(protocol, ch.pipeline());
     }
 }

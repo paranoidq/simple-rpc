@@ -30,7 +30,7 @@ public class MessageRecvHandler extends ChannelInboundHandlerAdapter {
         logger.info("Receive MessageRequest：messageId=" + request.getMessageId());
         MessageResponse response = new MessageResponse();
         MessageRecvHandleTask task = new MessageRecvHandleTask(request, response, handlerMap);
-        MessageRecvExecutor.submit(task, ctx, request, response);
+        MessageRecvExecutor.getInstance().submit(task, ctx, request, response);
     }
 
     @Override

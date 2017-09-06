@@ -2,7 +2,7 @@ package me.framework.rpc.core.client;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
-import me.framework.rpc.message.MessageSerializeBinder;
+import me.framework.rpc.message.RpcSerializeFrame;
 import me.framework.rpc.serialize.support.RpcSerializeProtocol;
 
 /**
@@ -12,11 +12,11 @@ import me.framework.rpc.serialize.support.RpcSerializeProtocol;
 public class MessageSendChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     private RpcSerializeProtocol protocol;
-    private MessageSerializeBinder binder = new RpcSendSerializeBinder();
+    private RpcSerializeFrame frame = new RpcSendSerializeFrame();
 
     @Override
     protected void initChannel(SocketChannel ch) throws Exception {
-        binder.bind(protocol, ch.pipeline());
+        frame.select(protocol, ch.pipeline());
     }
 
     public MessageSendChannelInitializer setRpcSerializeProtocol(RpcSerializeProtocol protocol) {

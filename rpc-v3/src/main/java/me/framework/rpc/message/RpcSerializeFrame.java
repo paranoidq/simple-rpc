@@ -7,8 +7,8 @@ import me.framework.rpc.serialize.support.RpcSerializeProtocol;
  * @author paranoidq
  * @since 1.0.0
  */
-public interface MessageSerializeBinder {
+public interface RpcSerializeFrame {
 
-    void bind(RpcSerializeProtocol protocol, ChannelPipeline pipeline);
+    void select(RpcSerializeProtocol protocol, ChannelPipeline pipeline);
 
 }
