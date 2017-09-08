@@ -12,6 +12,7 @@ import me.framework.rpc.model.MessageRequest;
 import me.framework.rpc.model.MessageResponse;
 import me.framework.rpc.model.ServiceHolder;
 import me.framework.rpc.serialize.support.RpcSerializeProtocol;
+import me.framework.rpc.spring.NettyRpcRegistry;
 import me.framework.rpc.util.nettybuilder.NettyServerBootstrapBuilder;
 import me.framework.rpc.util.pool.NamedThreadFactory;
 import me.framework.rpc.util.pool.RpcThreadPool;
@@ -29,6 +30,15 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
+ *
+ * v3 版本引入了spring之后，不在需要通过手动调用start进行启动了
+ *
+ * 启动在{@link NettyRpcRegistry#afterPropertiesSet()}中进行
+ * 该函数会首先从配置文件中获取对应的参数，并注入到{@link MessageRecvExecutor}实例中，
+ * 然后调用{@link MessageRecvExecutor#start()}启动线程池，坚挺即将到来的请求
+ *
+ * {@link me.framework.rpc.core.client.MessageSendExecutor}同理
+ *
  * @author paranoidq
  * @since 1.0.0
  */
@@ -44,12 +54,20 @@ public class MessageRecvExecutor implements ApplicationContextAware {
 
     /**
      * 通过spring注入方式设置具体值
+     * 参见：{@link me.framework.rpc.spring.NettyRpcRegistry}
      */
     private String serverAddress;
     /**
      * 通过spring注入方式设置具体值
+     * 参见：{@link me.framework.rpc.spring.NettyRpcRegistry}
      */
     private RpcSerializeProtocol serializeProtocol = RpcSerializeProtocol.JDK_SERIALIZE;
+
+    /**
+     * 通过spring注入方式设置具体值
+     * 参见：{@link me.framework.rpc.spring.NettyRpcRegistry}
+     */
+    private String echoApiPort;
 
     /**
      * 并发执行executor
@@ -94,7 +112,13 @@ public class MessageRecvExecutor implements ApplicationContextAware {
         if (threadPoolExecutor == null) {
             synchronized (MessageRecvExecutor.class) {
                 if (threadPoolExecutor == null) {
-                   threadPoolExecutor = MoreExecutors.listeningDecorator((ThreadPoolExecutor) RpcThreadPool.getExecutor(16, -1));
+                   threadPoolExecutor =
+                       MoreExecutors.listeningDecorator((ThreadPoolExecutor)
+                           (RpcSystemConfig.isMonitorServerSupport()
+                               ? RpcThreadPool.getExecutorWithJmx(threadNums, queueNums)
+                               : RpcThreadPool.getExecutor(threadNums, queueNums)
+                           )
+                       );
                 }
             }
         }
@@ -117,6 +141,8 @@ public class MessageRecvExecutor implements ApplicationContextAware {
             }
         }, threadPoolExecutor);
     }
+
+
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
@@ -149,15 +175,15 @@ public class MessageRecvExecutor implements ApplicationContextAware {
 
                 future.addListener(new ChannelFutureListener() {
                     @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
+                    public void operationComplete(final ChannelFuture future) throws Exception {
                         if (future.isSuccess()) {
                             System.out.printf("Netty RPC Server started success ip:%s port:%d\n", host, port);
-                            future.channel().closeFuture().sync().addListener(new ChannelFutureListener() {
-                                @Override
-                                public void operationComplete(ChannelFuture future) throws Exception {
-                                    threadPoolExecutor.shutdown();
-                                }
-                            });
+//                            future.channel().closeFuture().sync().addListener(new ChannelFutureListener() {
+//                                @Override
+//                                public void operationComplete(ChannelFuture future) throws Exception {
+//                                    threadPoolExecutor.shutdown();
+//                                }
+//                            });
                         }
                     }
                 });
@@ -165,7 +191,7 @@ public class MessageRecvExecutor implements ApplicationContextAware {
                 logger.error("Netty RPC Server started fail!\n");
             }
         } catch (InterruptedException e) {
-            logger.error("Netty RPC Server started fail!\n");
+            logger.error("Netty RPC Server started fail!\n", e);
         }
     }
 
@@ -197,5 +223,13 @@ public class MessageRecvExecutor implements ApplicationContextAware {
 
     public void setSerializeProtocol(RpcSerializeProtocol serializeProtocol) {
         this.serializeProtocol = serializeProtocol;
+    }
+
+    public String getEchoApiPort() {
+        return echoApiPort;
+    }
+
+    public void setEchoApiPort(String echoApiPort) {
+        this.echoApiPort = echoApiPort;
     }
 }

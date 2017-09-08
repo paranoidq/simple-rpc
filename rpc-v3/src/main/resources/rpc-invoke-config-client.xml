@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:nettyrpc="http://me.framework/nettyrpc" xmlns:conte="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+	http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+    http://me.framework/nettyrpc http://me.framework/nettyrpc/nettyrpc.xsd">
+
+    <context:property-placeholder location="classpath:rpc-server.properties"/>
+
+
+    <!-- 客户端指定注册服务接口 -->
+    <nettyrpc:reference id="addCalculate" interfaceName="me.framework.rpc.services.AddCalculate"
+                        ipAddr="${rpc.server.addr}" protocol="KRYO_SERIALIZE"/>
+
+    <nettyrpc:reference id="multiCalculate" interfaceName="me.framework.rpc.services.MultiCalculate"
+                        ipAddr="${rpc.server.addr}" protocol="KRYO_SERIALIZE"/>
+</beans>

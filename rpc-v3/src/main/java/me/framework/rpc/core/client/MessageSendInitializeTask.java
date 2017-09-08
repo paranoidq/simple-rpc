@@ -4,17 +4,24 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.EventLoopGroup;
+import me.framework.rpc.config.RpcSystemConfig;
+import me.framework.rpc.logger.AppLoggerInject;
 import me.framework.rpc.serialize.support.RpcSerializeProtocol;
 import me.framework.rpc.util.nettybuilder.NettyClientBootstrapBuilder;
+import org.slf4j.Logger;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author paranoidq
  * @since 1.0.0
  */
 public class MessageSendInitializeTask implements Callable<Boolean> {
+
+    @AppLoggerInject
+    private static Logger logger;
 
     private EventLoopGroup eventLoopGroup;
     private InetSocketAddress serverAddress;
@@ -40,7 +47,14 @@ public class MessageSendInitializeTask implements Callable<Boolean> {
                     MessageSendHandler sendHandler = future.channel().pipeline().get(MessageSendHandler.class);
                     RpcServerLoader.getInstance().setMessageSendHandler(sendHandler);
                 } else {
-                    System.err.println(future.cause());
+                    // 如果连接不成功，则隔一段时间之后再次重连
+                    eventLoopGroup.schedule(new Runnable() {
+                        @Override
+                        public void run() {
+                            logger.info("NettyRPC server is down,start to reconnecting to: " + serverAddress.getAddress().getHostAddress() + ':' + serverAddress.getPort());
+                            call();
+                        }
+                    }, RpcSystemConfig.SYSTEM_PROPERTY_CLIENT_RECONNECT_DELAY, TimeUnit.SECONDS);
                 }
             }
         });

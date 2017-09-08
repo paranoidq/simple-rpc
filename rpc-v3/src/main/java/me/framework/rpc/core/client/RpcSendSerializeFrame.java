@@ -34,8 +34,8 @@ public class RpcSendSerializeFrame implements RpcSerializeFrame {
                 handlers.getInstance(JdkNativeSendHandler.class).handle(pipeline);
                 break;
             }
-            case KRYO_SERIAZLIZE: {
-                logger.info("Use KRYO_SERIAZLIZE");
+            case KRYO_SERIALIZE: {
+                logger.info("Use KRYO_SERIALIZE");
                 handlers.getInstance(KryoSendHandler.class).handle(pipeline);
                 break;
             }

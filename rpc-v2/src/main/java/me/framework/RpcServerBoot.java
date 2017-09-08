@@ -9,6 +9,6 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 public class RpcServerBoot {
 
     public static void main(String[] args) {
-        new ClassPathXmlApplicationContext("rpc-invoke.xml");
+        new ClassPathXmlApplicationContext("classpath:rpc-invoke-config-server.xml");
     }
 }

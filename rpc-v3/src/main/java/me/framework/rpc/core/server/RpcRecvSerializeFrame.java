@@ -46,12 +46,12 @@ public class RpcRecvSerializeFrame implements RpcSerializeFrame {
     public void select(RpcSerializeProtocol protocol, ChannelPipeline pipeline) {
         switch (protocol) {
             case JDK_SERIALIZE: {
-                logger.info("Use KRYO_SERIAZLIZE");
+                logger.info("Use KRYO_SERIALIZE");
                 handler.getInstance(JdkNativeRecvHandler.class).handle(handlerMap, pipeline);
                 break;
             }
-            case KRYO_SERIAZLIZE: {
-                logger.info("Use KRYO_SERIAZLIZE");
+            case KRYO_SERIALIZE: {
+                logger.info("Use KRYO_SERIALIZE");
                 handler.getInstance(KryoRecvHandler.class).handle(handlerMap, pipeline);
                 break;
             }

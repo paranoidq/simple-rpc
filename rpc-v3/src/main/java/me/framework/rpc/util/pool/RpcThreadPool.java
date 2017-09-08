@@ -1,11 +1,14 @@
 package me.framework.rpc.util.pool;
 
-import com.sun.org.apache.regexp.internal.RE;
 import me.framework.rpc.config.RpcSystemConfig;
+import me.framework.rpc.jmx.ThreadPoolMonitorProvider;
+import me.framework.rpc.jmx.ThreadPoolStatus;
 import me.framework.rpc.util.pool.policy.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.*;
 
 /**
@@ -20,6 +23,14 @@ import java.util.concurrent.*;
 public class RpcThreadPool {
     private static Logger logger = LoggerFactory.getLogger(RpcThreadPool.class);
 
+    /**
+     * 用于进行JMX监控的定时器，
+     * 设置为守护线程
+     */
+    private static final Timer timer = new Timer("ThreadPoolMonitor", true);
+    private static long monitorDelay = 100L;
+    public static long monitorPeriod = 300L;
+
     private static RejectedExecutionHandler createPolicy() {
         RejectPolicyType rejectPolicyType = RejectPolicyType.fromString(
             System.getProperty(RpcSystemConfig.SystemPropertyThreadPoolRejectedPolicyAttr,
@@ -33,6 +44,8 @@ public class RpcThreadPool {
                 return new RejectedPolicy();
             case DISCARDED_POLICY:
                 return new DiscardedPolicy();
+            case ABORT_POLICY:
+                return new AbortPolicy();
             default:
                 return null;
         }
@@ -40,7 +53,7 @@ public class RpcThreadPool {
 
     private static BlockingQueue<Runnable> createBlockingQueue(int queues) {
         BlockingQueueType queueType = BlockingQueueType.fromString(
-            System.getProperty(RpcSystemConfig.SystemPropertyThreadPoolQueueNameAttr,
+            System.getProperty(RpcSystemConfig.SystemPropertyThreadPoolQueueTypeAttr,
                 "LinkedBlockingQueue"));
 
         switch (queueType) {
@@ -72,5 +85,31 @@ public class RpcThreadPool {
             new NamedThreadFactory(name, true),
             createPolicy()
             );
+    }
+
+    public static Executor getExecutorWithJmx(int threads, int queues){
+        final ThreadPoolExecutor executor = (ThreadPoolExecutor) getExecutor(threads, queues);
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                // 将线程池的状态写入me.framework.rpc.jmx.ThreadPoolStatus中
+                // 监控线程定时刷新ThreadPoolStatus
+                ThreadPoolStatus status = new ThreadPoolStatus();
+                status.setPoolSize(executor.getPoolSize());
+                status.setActiveCount(executor.getActiveCount());
+                status.setCorePoolSize(executor.getCorePoolSize());
+                status.setMaximumPoolSize(executor.getMaximumPoolSize());
+                status.setLargestPoolSize(executor.getLargestPoolSize());
+                status.setTaskCount(executor.getTaskCount());
+                status.setCompletedTaskCount(executor.getCompletedTaskCount());
+                try {
+                    // 通过spring提供的JXM接口注册ThreadPoolStatus
+                    ThreadPoolMonitorProvider.monitor(status);
+                } catch (Throwable t) {
+                    logger.error("Register ThreadPoolStatus failed!", t);
+                }
+            }
+        }, monitorDelay, monitorPeriod);
+        return executor;
     }
 }

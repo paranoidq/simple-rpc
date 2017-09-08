@@ -27,7 +27,8 @@ public class MessageRecvHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         MessageRequest request = (MessageRequest) msg;
-        logger.info("Receive MessageRequest：messageId=" + request.getMessageId());
+        logger.info("Receive MessageRequest: messageId=" + request.getMessageId());
+
         MessageResponse response = new MessageResponse();
         MessageRecvHandleTask task = new MessageRecvHandleTask(request, response, handlerMap);
         MessageRecvExecutor.getInstance().submit(task, ctx, request, response);

@@ -9,13 +9,12 @@ import java.io.Serializable;
  * @since 1.0.0
  */
 public class MessageResponse implements Serializable {
-
-
     private static final long serialVersionUID = 3006535874960565163L;
 
     private String messageId;
     private String error;
     private Object result;
+    private boolean returnNotNull;
 
     public String getMessageId() {
         return messageId;
@@ -39,6 +38,14 @@ public class MessageResponse implements Serializable {
 
     public void setResult(Object resultDesc) {
         this.result = resultDesc;
+    }
+
+    public boolean isReturnNotNull() {
+        return returnNotNull;
+    }
+
+    public void setReturnNotNull(boolean returnNotNull) {
+        this.returnNotNull = returnNotNull;
     }
 
     @Override

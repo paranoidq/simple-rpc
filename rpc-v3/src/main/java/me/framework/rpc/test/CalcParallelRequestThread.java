@@ -1,7 +1,7 @@
 package me.framework.rpc.test;
 
 import me.framework.rpc.core.client.MessageSendExecutor;
-import me.framework.rpc.services.Calculate;
+import me.framework.rpc.services.AddCalculate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,9 +31,9 @@ public class CalcParallelRequestThread implements Runnable {
     public void run() {
         try {
             signal.await();
-            Calculate calculate = executor.execute(Calculate.class);
+            AddCalculate calculate = executor.execute(AddCalculate.class);
             int add = calculate.add(taskNumber, taskNumber);
-            System.out.println("Calculate add result: [" + add + "]");
+            System.out.println("AddCalculate add result: [" + add + "]");
         } catch (InterruptedException e) {
             logger.error("", e);
         } catch (Exception e) {

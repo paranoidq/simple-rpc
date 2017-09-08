@@ -8,6 +8,7 @@ import me.framework.rpc.model.MessageResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.SocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -19,14 +20,28 @@ public class MessageSendHandler extends ChannelDuplexHandler {
     private static final Logger logger = LoggerFactory.getLogger(MessageSendHandler.class);
 
     private ConcurrentHashMap<String, MessageCallBack> waitForResponseMap = new ConcurrentHashMap<>();
-
     private volatile Channel channel;
+    private SocketAddress remoteAddr;
+
+    public Channel getChannel() {
+        return channel;
+    }
+
+    public SocketAddress getRemoteAddr() {
+        return remoteAddr;
+    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
-        channel = ctx.channel();
+        this.remoteAddr = this.channel.remoteAddress();
         ChannelHandler handler = ctx.channel().pipeline().get(KryoEncoder.class);
+    }
+
+    @Override
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        super.channelRegistered(ctx);
+        this.channel = ctx.channel();
     }
 
     /**
@@ -44,6 +59,12 @@ public class MessageSendHandler extends ChannelDuplexHandler {
             waitForResponseMap.remove(messageId);
             callBack.over(response);
         }
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        logger.error("", cause);
+        ctx.close();
     }
 
     public void close() {

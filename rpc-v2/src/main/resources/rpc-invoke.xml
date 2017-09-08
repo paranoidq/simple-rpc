@@ -11,14 +11,14 @@
     <bean id="rpcbean" class="me.framework.rpc.model.ServiceHolder">
         <property name="services">
             <map>
-                <entry key="me.framework.rpc.services.Calculate">
+                <entry key="me.framework.rpc.services.AddCalculate">
                     <ref bean="calc"/>
                 </entry>
             </map>
         </property>
     </bean>
 
-    <bean id="calc" class="me.framework.rpc.services.impl.CalculateImpl"/>
+    <bean id="calc" class="me.framework.rpc.services.impl.AddCalculateImpl"/>
     <bean id="rpcServer" class="me.framework.rpc.core.server.MessageRecvExecutor">
         <constructor-arg name="serverAddress" value="${rpc.server.addr}"/>
         <constructor-arg name="protocol" value="KRYO_SERIAZLIZE"/>

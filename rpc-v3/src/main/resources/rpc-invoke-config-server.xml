@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:nettyrpc="http://me.framework/nettyrpc"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://me.framework/nettyrpc http://me.framework/nettyrpc/nettyrpc.xsd">
+    <!--<context:component-scan base-package="me.framework.rpc"/>-->
+
+    <context:property-placeholder location="classpath:rpc-server.properties"/>
+
+    <!-- 服务端启动Bean注册入口 -->
+    <nettyrpc:registry id="rpcRegistry" ipAddr="${rpc.server.addr}" echoApiPort="${rpc.server.echo.api.port}"
+                       protocol="KRYO_SERIALIZE"/>
+
+    <!-- 服务注册入口 -->
+    <nettyrpc:service id="add" interfaceName="me.framework.rpc.services.AddCalculate" ref="addService"/>
+    <nettyrpc:service id="multi" interfaceName="me.framework.rpc.services.MultiCalculate" ref="multiService"/>
+
+
+    <bean id="addService" class="me.framework.rpc.services.impl.AddCalculateImpl"/>
+    <bean id="multiService" class="me.framework.rpc.services.impl.MultiCalculateImpl"/>
+</beans>

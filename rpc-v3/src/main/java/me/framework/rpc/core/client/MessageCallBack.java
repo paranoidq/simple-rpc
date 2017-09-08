@@ -1,5 +1,7 @@
 package me.framework.rpc.core.client;
 
+import me.framework.rpc.config.RpcSystemConfig;
+import me.framework.rpc.exception.RejectedResponseException;
 import me.framework.rpc.model.MessageRequest;
 import me.framework.rpc.model.MessageResponse;
 
@@ -15,7 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class MessageCallBack {
 
     private MessageRequest request;
-    private volatile MessageResponse response;
+    private MessageResponse response;
 
     private Lock lock = new ReentrantLock();
     private Condition finish = lock.newCondition();
@@ -50,11 +52,11 @@ public class MessageCallBack {
         }
         try {
             lock.lock();
-            finish.await(10 * 1000, TimeUnit.MILLISECONDS);
-            if (this.response != null) {
+            finish.await(RpcSystemConfig.SYSTEM_PROPERTY_MESSAGE_CALLBACK_TIMEOUT, TimeUnit.MILLISECONDS);
+            if (!this.response.getError().equals(RpcSystemConfig.FILTER_RESPONSE_MSG) && (!this.response.isReturnNotNull() || (this.response.isReturnNotNull() && this.response.getResult() != null))) {
                 return this.response.getResult();
             } else {
-                return null;
+                throw new RejectedResponseException(RpcSystemConfig.FILTER_RESPONSE_MSG);
             }
         } finally {
             lock.unlock();
