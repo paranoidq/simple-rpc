@@ -162,7 +162,7 @@ public class MessageRecvExecutor implements ApplicationContextAware {
     public void start() {
         try {
             ServerBootstrap bootstrap = NettyServerBootstrapBuilder.getInstance(boss, worker)
-                .setAcceptSocketsMax(128)
+                .setSoBacklog(128)
                 .build();
             bootstrap.childHandler(new MessageRecvChannelInitializer(handlerMap)
                 .setSerializeProtocol(serializeProtocol));

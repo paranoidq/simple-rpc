@@ -118,7 +118,7 @@ public class NettyServerBootstrapBuilder {
         return this;
     }
 
-    public NettyServerBootstrapBuilder setAcceptSocketsMax(int soBackLog) {
+    public NettyServerBootstrapBuilder setSoBacklog(int soBackLog) {
         this.acceptSocketsMax = soBackLog;
         return this;
     }
@@ -169,7 +169,7 @@ public class NettyServerBootstrapBuilder {
     public ServerBootstrap build() {
         Class<? extends ServerSocketChannel> channelClass = NioServerSocketChannel.class;
         if (this.acceptEventLoopGroup == null) {
-            this.acceptEventLoopGroup = new NioEventLoopGroup();
+            this.acceptEventLoopGroup = new NioEventLoopGroup(acceptEventLoopThreads);
             this.ioEventLoopGroup = new NioEventLoopGroup(ioEventLoopThreads);
             if (useEpoll) {
                 channelClass = NioServerSocketChannel.class;
